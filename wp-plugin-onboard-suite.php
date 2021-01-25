@@ -307,6 +307,14 @@ function get_access_token($options) {
     return $token;
 }
 
+function write_log ($log) {
+    if (is_array($log) || is_object($log)) {
+       error_log(print_r($log, true));
+    } else {
+       error_log($log);
+    }
+}
+
 function create_contact($options, $url, $user) {
     $access_token = get_access_token($options);
 
@@ -319,9 +327,9 @@ function create_contact($options, $url, $user) {
         'data' => array(
             'type' => 'Contacts',
             'attributes' => array(
-                'first_name' => $user->first_name,
-                'last_name' => $user->last_name,
-                'email1' => $user->user_email
+                'first_name' => $user['first_name'],
+                'last_name' => $user['last_name'],
+                'email1' => $user['user_email']
             )
         )
     );
@@ -343,7 +351,7 @@ function create_contact($options, $url, $user) {
     return $responseJson->data;
 }
 
-function create_external_id($options, $url, $user, $userContactId) {
+function create_external_id($options, $url, $user) {
     $access_token = get_access_token($options);
 
     // Do nothing if the access token is not ready
@@ -402,10 +410,11 @@ function create_external_id($options, $url, $user, $userContactId) {
         'data' => array(
             'type' => $externalIdModule,
             'attributes' => array(
+                'name' => $system_name,
                 $system_name_attr => $system_name,
-                $system_username_attr => $user->user_login,
-                $system_user_id_attr => $user->ID,
-                $contact_id_attr => $userContactId
+                $system_username_attr => $user['user_login'],
+                $system_user_id_attr => $user['id'],
+                $contact_id_attr => $user['contact_id']
             )
         )
     );
@@ -443,17 +452,22 @@ function onboard_user($user_id) {
         return;
     }
 
-    $user = get_userdata($user_id);
-    if (!$user) {
-        return;
-    }
-
     $url = sprintf('%s/V8/module', $urlBase);
+
+    $user = array();
+
+    $form_data = str_replace('\\', '', $_POST['form_data']);
+    foreach(json_decode($form_data, true) as $form_data_item) {
+        $user[$form_data_item['field_name']] = $form_data_item['value'];
+    }
+    $user['id'] = $user_id;
 
     // Create contact
     $contact = create_contact($options, $url, $user);
+    $user['contact_id'] = $contact->id;
+
     // Create external Id linked with the contact
-    create_external_id($options, $url, $user, $contact->id);
+    create_external_id($options, $url, $user);
 }
 
 add_action('user_register', 'onboard_user');
