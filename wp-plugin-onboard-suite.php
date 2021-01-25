@@ -326,7 +326,6 @@ function create_contact($options, $url, $user) {
         )
     );
     
-    // Create a new contact
     $response = wp_remote_post($url, array(
         'headers' => array(
             'content-type' => 'application/json',
@@ -410,7 +409,6 @@ function create_external_id($options, $url, $user, $userContactId) {
         )
     );
     
-    // Create external Id
     $response = wp_remote_post($url, array(
         'headers' => array(
             'content-type' => 'application/json',
@@ -433,23 +431,26 @@ function create_external_id($options, $url, $user, $userContactId) {
   * @param $user_id 
   */
 function onboard_user($user_id) {
+    $urlBase = '';
+    // Do nothing if the url base is not set
+    if(array_key_exists('onboard_suitecrm_field_urlbase', $options)) {
+        $urlBase = $options['onboard_suitecrm_field_urlbase'];
+    } else {
+        return;
+    }
+
     $user = get_userdata($user_id);
 
-    if ($user) {
-        $urlBase = '';
-
-        if(array_key_exists('onboard_suitecrm_field_urlbase', $options)) {
-            $urlBase = $options['onboard_suitecrm_field_urlbase'];
-        } else {
-            return;
-        }
-
-        $options = get_option('onboard_options');
-        $url = sprintf('%s/V8/module', $urlBase);
-
-        $contact = create_contact($options, $url, $user);
-        create_external_id($options, $url, $user, $contact->id);
+    if (!$user) {
+        return;
     }
+    $options = get_option('onboard_options');
+    $url = sprintf('%s/V8/module', $urlBase);
+
+    // Create contact
+    $contact = create_contact($options, $url, $user);
+    // Create external Id linked with the contact
+    create_external_id($options, $url, $user, $contact->id);
 }
 
 add_action('user_register', 'onboard_user');
