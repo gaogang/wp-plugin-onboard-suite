@@ -327,6 +327,7 @@ function create_contact($options, $url, $user) {
     );
     
     $response = wp_remote_post($url, array(
+        'timeout' => 15, 
         'headers' => array(
             'content-type' => 'application/json',
             'authorization' => sprintf('Bearer %s', $access_token)
@@ -410,6 +411,7 @@ function create_external_id($options, $url, $user, $userContactId) {
     );
     
     $response = wp_remote_post($url, array(
+        'timeout' => 15, 
         'headers' => array(
             'content-type' => 'application/json',
             'authorization' => sprintf('Bearer %s', $access_token)
@@ -431,6 +433,8 @@ function create_external_id($options, $url, $user, $userContactId) {
   * @param $user_id 
   */
 function onboard_user($user_id) {
+    $options = get_option('onboard_options');
+
     $urlBase = '';
     // Do nothing if the url base is not set
     if(array_key_exists('onboard_suitecrm_field_urlbase', $options)) {
@@ -440,11 +444,10 @@ function onboard_user($user_id) {
     }
 
     $user = get_userdata($user_id);
-
     if (!$user) {
         return;
     }
-    $options = get_option('onboard_options');
+
     $url = sprintf('%s/V8/module', $urlBase);
 
     // Create contact
